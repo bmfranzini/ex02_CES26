@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    
+    <!-- Elemento de áudio para efeito sonoro de explosão -->
+    <audio id="explosionSound">
+        <source src="e.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+
+        var aviao = new Image();
+        aviao.src = "a.png";
+        var missile = new Image();
+        missile.src = "m.png"; // Substitua pelo caminho da imagem do míssil
+        var explosion = new Image();
+        explosion.src = "e.png"; // Substitua pelo caminho da imagem da explosão
+
+        var aviaoX = canvas.width / 2;
+        var aviaoY = canvas.height / 2;
+        var missileX = canvas.width / 2;
+        var missileY = canvas.height / 2;
+        var missileSpeed = 4; // Velocidade do míssil
+
+        var missileFired = false;
+        var isExploding = false;
+
+        function desenharAviao() {
+            ctx.drawImage(aviao, aviaoX - 25, aviaoY - 25, 50, 50);
+        }
+
+        function desenharMissile() {
+            if (!isExploding) {
+                // Calcula o ângulo entre o míssil e o avião
+                var angle = Math.atan2(aviaoY - missileY, aviaoX - missileX);
+
+                // Rotaciona o contexto do canvas para desenhar o míssil na posição correta
+                ctx.save();
+                ctx.translate(missileX, missileY);
+                ctx.rotate(angle);
+                ctx.drawImage(missile, -25, -25, 50, 50); // Ajuste o tamanho conforme necessário
+                ctx.restore();
+            } else {
+                // Desenha a explosão
+                ctx.drawImage(explosion, missileX - 50, missileY - 50, 100, 100); // Ajuste o tamanho conforme necessário
+            }
+        }
+
+        function atualizarPosicaoAviao(event) {
+            aviaoX = event.clientX - canvas.getBoundingClientRect().left - 25;
+            aviaoY = event.clientY - canvas.getBoundingClientRect().top - 25;
+        }
+
+        canvas.addEventListener("mousemove", atualizarPosicaoAviao);
+
+        canvas.addEventListener("contextmenu", function (event) {
+            event.preventDefault(); // Impede o menu de contexto padrão ao clicar com o botão direito
+
+            if (!missileFired) {
+                missileFired = true;
+            }
+        });
+
+        function verificarColisao() {
+            if (!isExploding && missileFired) {
+                var distancia = Math.sqrt(Math.pow(aviaoX - missileX, 2) + Math.pow(aviaoY - missileY, 2));
+
+                if (distancia < 25) { // Você pode ajustar o valor de colisão conforme necessário
+                    isExploding = true;
+
+                    // Reproduz o som de explosão
+                    var explosionSound = document.getElementById("explosionSound");
+                    explosionSound.currentTime = 0; // Reinicia o som, caso já esteja reproduzindo
+                    explosionSound.play();
+
+                    setTimeout(function () {
+                        isExploding = false;
+                        resetMissile();
+                    }, 1000); // Tempo de duração da explosão (1 segundo)
+                }
+            }
+        }
+
+        function resetMissile() {
+            missileFired = false;
+            missileX = canvas.width / 2;
+            missileY = canvas.height / 2;
+        }
+
+        function animar() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            desenharMissile();
+            desenharAviao();
+            verificarColisao();
+
+            if (missileFired && !isExploding) {
+                // Move o míssil na direção do avião
+                var angle = Math.atan2(aviaoY - missileY, aviaoX - missileX);
+                missileX += Math.cos(angle) * missileSpeed;
+                missileY += Math.sin(angle) * missileSpeed;
+            }
+
+            requestAnimationFrame(animar);
+        }
+
+        animar();
+    </script>
+</body>
+</html>
